@@ -1,6 +1,6 @@
 require('babel-polyfill');
 
-var CryptoPunksMarket = artifacts.require("./CryptoPunksMarket.sol");
+var CryptoSpinnersMarket = artifacts.require("./CryptoSpinnersMarket.sol");
 
 var expectThrow = async function(promise) {
   try {
@@ -34,10 +34,10 @@ var compareBalance = function(previousBalance, currentBalance, amount) {
   assert.equal(Number(subCurrBalance), Number(subPrevBalance) + amount, "Account 1 balance incorrect after withdrawal.");
 };
 
-contract('CryptoPunksMarket-edgecases', function (accounts) {
-  it("re-assign a punk during assignment phase, assign same punk twice", async function () {
-    var contract = await CryptoPunksMarket.deployed();
-    // Assign a two punks, then re-assign one of them
+contract('CryptoSpinnersMarket-edgecases', function (accounts) {
+  it("re-assign a spinner during assignment phase, assign same spinner twice", async function () {
+    var contract = await CryptoSpinnersMarket.deployed();
+    // Assign a two spinners, then re-assign one of them
     await contract.setInitialOwner(accounts[3], 500, {from: accounts[0]});
     await contract.setInitialOwner(accounts[4], 501, {from: accounts[0]});
     await contract.setInitialOwner(accounts[4], 500, {from: accounts[0]});
@@ -48,37 +48,37 @@ contract('CryptoPunksMarket-edgecases', function (accounts) {
     assert.equal(balance3, 0);
     assert.equal(balance4, 2);
     // Check ownership
-    var currentOwner = await contract.punkIndexToAddress.call(500);
+    var currentOwner = await contract.spinnerIndexToAddress.call(500);
     assert.equal(accounts[4], currentOwner);
-    // Check the number of punks left to assign
-    var leftToAssign = await contract.punksRemainingToAssign.call();
+    // Check the number of spinners left to assign
+    var leftToAssign = await contract.spinnersRemainingToAssign.call();
     assert.equal(leftToAssign, 9998);
   }),
-  it("place a bid, then transfer the punk, then new owner accepts bid", async function () {
-    var contract = await CryptoPunksMarket.deployed();
-    // Open up the contract for action, assign some punks
+  it("place a bid, then transfer the spinner, then new owner accepts bid", async function () {
+    var contract = await CryptoSpinnersMarket.deployed();
+    // Open up the contract for action, assign some spinners
     await contract.allInitialOwnersAssigned();
-    await contract.getPunk(1001, {from: accounts[1]});
-    await contract.getPunk(1002, {from: accounts[5]});
-    await contract.getPunk(1003, {from: accounts[8]});
-    var punkIndex = 1001;
+    await contract.getSpinner(1001, {from: accounts[1]});
+    await contract.getSpinner(1002, {from: accounts[5]});
+    await contract.getSpinner(1003, {from: accounts[8]});
+    var spinnerIndex = 1001;
     var firstOwner = accounts[1];
     var bidder = accounts[0];
     var newOwner = accounts[2];
     var bidPrice = 8000;
     // Check initial ownership
-    var initialOwner = await contract.punkIndexToAddress.call(punkIndex);
+    var initialOwner = await contract.spinnerIndexToAddress.call(spinnerIndex);
     assert.equal(firstOwner, initialOwner);
-    // Bidder bids on punk
+    // Bidder bids on spinner
     var accountBalancePrev = await web3.eth.getBalance(bidder);
-    await contract.enterBidForPunk(punkIndex, {from: bidder, value: bidPrice});
+    await contract.enterBidForSpinner(spinnerIndex, {from: bidder, value: bidPrice});
     // Owner transfers it to New Owner
-    await contract.transferPunk(newOwner, punkIndex, {from: firstOwner});
+    await contract.transferSpinner(newOwner, spinnerIndex, {from: firstOwner});
     // New owner accepts original bid
     var pendingAmount = await contract.pendingWithdrawals.call(bidder);
     assert.equal(0, pendingAmount);
     // console.log("Prev acc0: " + accountBalancePrev);
-    await contract.acceptBidForPunk(punkIndex, bidPrice, {from: newOwner});
+    await contract.acceptBidForSpinner(spinnerIndex, bidPrice, {from: newOwner});
     // Make sure A0 was charged
     var accountBalance = await web3.eth.getBalance(bidder);
     //console.log("Post acc0: " + accountBalance);
@@ -90,7 +90,7 @@ contract('CryptoPunksMarket-edgecases', function (accounts) {
     var newAmount = await contract.pendingWithdrawals.call(newOwner);
     assert.equal(0, newAmount);
     // Check ownership
-    var currentOwner = await contract.punkIndexToAddress.call(punkIndex);
+    var currentOwner = await contract.spinnerIndexToAddress.call(spinnerIndex);
     assert.equal(bidder, currentOwner);
     // Check the balances
     var balance0 = await contract.balanceOf.call(bidder);
@@ -101,23 +101,23 @@ contract('CryptoPunksMarket-edgecases', function (accounts) {
     assert.equal(balance2, 0);
   }),
   it("place a bid, then owner offers for sale, somebody accepts that offer", async function () {
-    var contract = await CryptoPunksMarket.deployed();
-    var punkIndex = 1002;
+    var contract = await CryptoSpinnersMarket.deployed();
+    var spinnerIndex = 1002;
     var firstOwner = accounts[5];
     var bidder = accounts[6];
     var buyer = accounts[7];
     var bidPrice = 7000;
     var salePrice = 9000;
     // Check initial ownership
-    var initialOwner = await contract.punkIndexToAddress.call(punkIndex);
+    var initialOwner = await contract.spinnerIndexToAddress.call(spinnerIndex);
     assert.equal(firstOwner, initialOwner);
-    // Bidder bids on punk
-    await contract.enterBidForPunk(punkIndex, {from: bidder, value: bidPrice});
+    // Bidder bids on spinner
+    await contract.enterBidForSpinner(spinnerIndex, {from: bidder, value: bidPrice});
     // Owner offers it for sale
-    await contract.offerPunkForSale(punkIndex, salePrice, {from: firstOwner});
+    await contract.offerSpinnerForSale(spinnerIndex, salePrice, {from: firstOwner});
     // Buyer buys
     var accountBalancePrev = await web3.eth.getBalance(buyer);
-    await contract.buyPunk(punkIndex, {from: buyer, value: salePrice});
+    await contract.buySpinner(spinnerIndex, {from: buyer, value: salePrice});
     // Make sure Buyer was charged
     var accountBalance = await web3.eth.getBalance(buyer);
     compareBalance(accountBalancePrev, accountBalance, -salePrice);
@@ -128,7 +128,7 @@ contract('CryptoPunksMarket-edgecases', function (accounts) {
     var newAmount = await contract.pendingWithdrawals.call(firstOwner);
     assert.equal(0, newAmount);
     // Check ownership
-    var currentOwner = await contract.punkIndexToAddress.call(punkIndex);
+    var currentOwner = await contract.spinnerIndexToAddress.call(spinnerIndex);
     assert.equal(buyer, currentOwner);
     // Check the balances
     var balance0 = await contract.balanceOf.call(bidder);
@@ -138,32 +138,32 @@ contract('CryptoPunksMarket-edgecases', function (accounts) {
     assert.equal(balance1, 0);
     assert.equal(balance2, 1);
     // Make sure the bid is still in place
-    var bid = await contract.punkBids.call(punkIndex);
+    var bid = await contract.spinnerBids.call(spinnerIndex);
     assert.equal(true, bid[0]);
-    assert.equal(punkIndex, bid[1]);
+    assert.equal(spinnerIndex, bid[1]);
     assert.equal(bidPrice, bid[3]);
   }),
   it("place a bid, then owner offers for sale, then bidder accepts that offer", async function () {
-    var contract = await CryptoPunksMarket.deployed();
-    var punkIndex = 1003;
+    var contract = await CryptoSpinnersMarket.deployed();
+    var spinnerIndex = 1003;
     var firstOwner = accounts[8];
     var bidder = accounts[9];
     var bidPrice = 14000;
     var salePrice = 15000;
     // Check initial ownership
-    var initialOwner = await contract.punkIndexToAddress.call(punkIndex);
+    var initialOwner = await contract.spinnerIndexToAddress.call(spinnerIndex);
     assert.equal(firstOwner, initialOwner);
-    // Bidder bids on punk
+    // Bidder bids on spinner
     console.log("About to enter bid");
     var accountBalancePrev = await web3.eth.getBalance(bidder);
-    await contract.enterBidForPunk(punkIndex, {from: bidder, value: bidPrice});
+    await contract.enterBidForSpinner(spinnerIndex, {from: bidder, value: bidPrice});
     console.log("Enter bid");
     // Owner offers it for sale
-    await contract.offerPunkForSale(punkIndex, salePrice, {from: firstOwner});
+    await contract.offerSpinnerForSale(spinnerIndex, salePrice, {from: firstOwner});
     console.log("Offer for sale");
     // Bidder buys
-    await contract.buyPunk(punkIndex, {from: bidder, value: 15000});
-    console.log("Buy punk");
+    await contract.buySpinner(spinnerIndex, {from: bidder, value: 15000});
+    console.log("Buy spinner");
     // Make sure bidder was charged for both bid and sale
     var accountBalance = await web3.eth.getBalance(bidder);
     compareBalance(accountBalancePrev, accountBalance, -(bidPrice + salePrice));
@@ -173,9 +173,9 @@ contract('CryptoPunksMarket-edgecases', function (accounts) {
     assert.equal(salePrice, amount);
     await contract.withdraw({from: firstOwner});
     var newAmount = await contract.pendingWithdrawals.call(firstOwner);
-    assert.equal(0, newAmount);    
+    assert.equal(0, newAmount);
     // Check ownership
-    var currentOwner = await contract.punkIndexToAddress.call(punkIndex);
+    var currentOwner = await contract.spinnerIndexToAddress.call(spinnerIndex);
     assert.equal(bidder, currentOwner);
     // Check the balances
     var balance0 = await contract.balanceOf.call(bidder);
@@ -183,7 +183,7 @@ contract('CryptoPunksMarket-edgecases', function (accounts) {
     assert.equal(balance0, 1);
     assert.equal(balance1, 0);
     // Make sure the bid is now gone
-    var bid = await contract.punkBids.call(punkIndex);
+    var bid = await contract.spinnerBids.call(spinnerIndex);
     assert.equal(false, bid[0]);
     // Make sure bidder was refunded for bid
     var amount1 = await contract.pendingWithdrawals.call(bidder);
@@ -193,21 +193,21 @@ contract('CryptoPunksMarket-edgecases', function (accounts) {
     var newAmount1 = await contract.pendingWithdrawals.call(bidder);
     assert.equal(0, newAmount1);
   }),
-  it("place a bid, then owner transfers punk to bidder", async function () {
-    var contract = await CryptoPunksMarket.deployed();
-    var punkIndex = 501;
+  it("place a bid, then owner transfers spinner to bidder", async function () {
+    var contract = await CryptoSpinnersMarket.deployed();
+    var spinnerIndex = 501;
     var firstOwner = accounts[4];
     var bidder = accounts[3];
-    var bidPrice = 10000;    
+    var bidPrice = 10000;
     // Check initial ownership
-    var initialOwner = await contract.punkIndexToAddress.call(punkIndex);
+    var initialOwner = await contract.spinnerIndexToAddress.call(spinnerIndex);
     assert.equal(firstOwner, initialOwner);
-    // Bidder bids on punk
-    await contract.enterBidForPunk(punkIndex, {from: bidder, value: bidPrice});
+    // Bidder bids on spinner
+    await contract.enterBidForSpinner(spinnerIndex, {from: bidder, value: bidPrice});
     // Owner transfers it to Bidder
-    await contract.transferPunk(bidder, punkIndex, {from: firstOwner});
+    await contract.transferSpinner(bidder, spinnerIndex, {from: firstOwner});
     // Check ownership
-    var currentOwner = await contract.punkIndexToAddress.call(punkIndex);
+    var currentOwner = await contract.spinnerIndexToAddress.call(spinnerIndex);
     assert.equal(bidder, currentOwner);
     // Check the balances
     var balance0 = await contract.balanceOf.call(bidder);
@@ -215,7 +215,7 @@ contract('CryptoPunksMarket-edgecases', function (accounts) {
     assert.equal(balance0, 1);
     assert.equal(balance1, 1);
     // Make sure the bid is now gone
-    var bid = await contract.punkBids.call(punkIndex);
+    var bid = await contract.spinnerBids.call(spinnerIndex);
     assert.equal(false, bid[0]);
     // Make sure bidder was refunded for bid
     var amount = await contract.pendingWithdrawals.call(bidder);

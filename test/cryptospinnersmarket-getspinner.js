@@ -1,6 +1,6 @@
 require('babel-polyfill');
 
-var CryptoPunksMarket = artifacts.require("./CryptoPunksMarket.sol");
+var CryptoSpinnersMarket = artifacts.require("./CryptoSpinnersMarket.sol");
 
 var expectThrow = async function(promise) {
   try {
@@ -24,41 +24,27 @@ var expectThrow = async function(promise) {
   assert.fail('Expected throw not received');
 };
 
-contract('CryptoPunksMarket-getPunk', function (accounts) {
-  it("can not get punks while allPunksAssigned = false", async function () {
-    var contract = await CryptoPunksMarket.deployed();
-    var balance = await contract.balanceOf.call(accounts[0]);
-    console.log("Pre Balance: " + balance);
+contract('CryptoSpinnersMarket-getSpinner', function (accounts) {
+  it("can get a spinner but no one else can get it after", async function () {
+    var contract = await CryptoSpinnersMarket.deployed();
 
-    var allAssigned = await contract.allPunksAssigned.call();
-    console.log("All assigned: " + allAssigned);
-    assert.equal(false, allAssigned, "allAssigned should be false to start.");
-    await expectThrow(contract.getPunk(0));
-    var balance = await contract.balanceOf.call(accounts[0]);
-    console.log("Balance after fail: " + balance);
-  }),
-  it("can get a punk but no one else can get it after", async function () {
-    var contract = await CryptoPunksMarket.deployed();
-
-    await contract.allInitialOwnersAssigned();
-
-    await contract.getPunk(0);
+    await contract.getSpinner(0, {from:accounts[0]});
     var balance = await contract.balanceOf.call(accounts[0]);
     console.log("Balance: " + balance);
-    assert.equal(balance.valueOf(), 1, "Didn't get the initial punk");
-    var owner = await contract.punkIndexToAddress.call(0);
+    assert.equal(balance.valueOf(), 1, "Didn't get the initial spinner");
+    var owner = await contract.spinnerIndexToAddress.call(0);
     assert.equal(owner, accounts[0], "Ownership array wrong");
-    var remaining = await contract.punksRemainingToAssign.call();
+    var remaining = await contract.spinnersRemainingToAssign.call();
     assert.equal(9999, remaining);
 
     try {
-      await contract.getPunk(0);
+      await contract.getSpinner(0);
       assert(false, "Should have thrown exception.");
     } catch (err) {
       // Should catch an exception
     }
 
-    var remainingAfter = await contract.punksRemainingToAssign.call();
+    var remainingAfter = await contract.spinnersRemainingToAssign.call();
     assert.equal(9999, remainingAfter);
     var balanceAfter = await contract.balanceOf.call(accounts[0]);
     assert.equal(1, balanceAfter);
